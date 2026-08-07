@@ -30,7 +30,7 @@ import os
 import sqlite3
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -189,10 +189,18 @@ class Store:
         return r[0] if r else GENESIS
 
     def ultimo_tipo(self, empleado_id: int) -> str | None:
-        """Ultimo movimiento REAL (entrada/salida) del empleado, para alternar."""
+        """Ultimo movimiento EFECTIVO (entrada/salida) del empleado, para
+        alternar. Las correcciones cuentan por su fecha/tipo REAL: corregir una
+        salida olvidada resincroniza el kiosco (si no, quedaba '● dentro' para
+        siempre y el primer toque del dia siguiente grababa una salida). Una
+        correccion ANTIGUA intercalada no cambia nada: su ts_real es anterior
+        al ultimo movimiento real."""
         r = self._con.execute(
-            "SELECT tipo FROM fichajes WHERE empleado_id=? AND tipo IN ('entrada','salida') "
-            "ORDER BY id DESC LIMIT 1", (int(empleado_id),)).fetchone()
+            "SELECT CASE WHEN tipo='correccion' THEN tipo_real ELSE tipo END "
+            "FROM fichajes WHERE empleado_id=? AND (tipo IN ('entrada','salida') "
+            "OR (tipo='correccion' AND tipo_real!='')) "
+            "ORDER BY (CASE WHEN tipo='correccion' THEN ts_real ELSE ts END) DESC, id DESC "
+            "LIMIT 1", (int(empleado_id),)).fetchone()
         return r[0] if r else None
 
     def fichar(self, empleado_id: int, tipo: str | None = None, nota: str = "",
@@ -256,6 +264,26 @@ class Store:
              "FROM fichajes WHERE ((tipo='correccion' AND ts_real LIKE ?) "
              "OR (tipo!='correccion' AND ts LIKE ?))")
         args: list = [pref + "%", pref + "%"]
+        if empleado_id is not None:
+            q += " AND empleado_id=?"
+            args.append(int(empleado_id))
+        q += " ORDER BY id"
+        return [Fichaje(*row) for row in self._con.execute(q, args)]
+
+    def fichajes_mes_ampliado(self, year: int, month: int,
+                              empleado_id: int | None = None) -> list[Fichaje]:
+        """Como fichajes_mes pero con UN DIA de margen a cada lado. Un turno
+        nocturno que cruza el cambio de mes (31-jul 22:00 -> 1-ago 06:00)
+        necesita ambos movimientos en la consulta para emparejarse; troceado
+        por mes, cada informe veia medio turno (0 h + incidencia falsa en los
+        DOS meses). Los informes usan esta consulta + resumen_mes(), que
+        despues descarta los dias del margen."""
+        ini = (date(year, month, 1) - timedelta(days=1)).isoformat()
+        fin = (date(year + month // 12, month % 12 + 1, 1) + timedelta(days=1)).isoformat()
+        q = ("SELECT id, empleado_id, nombre, tipo, ts, nota, hash, ts_real, tipo_real "
+             "FROM fichajes WHERE ((tipo='correccion' AND ts_real>=? AND ts_real<?) "
+             "OR (tipo!='correccion' AND ts>=? AND ts<?))")
+        args: list = [ini, fin, ini, fin]
         if empleado_id is not None:
             q += " AND empleado_id=?"
             args.append(int(empleado_id))
@@ -377,6 +405,15 @@ def resumen_por_dia(fichajes: list[Fichaje]) -> list[DiaResumen]:
     for d in dias.values():
         d.horas = round(d.horas, 2)
     return [dias[f] for f in sorted(dias)]
+
+
+def resumen_mes(fichajes: list[Fichaje], year: int, month: int) -> list[DiaResumen]:
+    """Resumen de UN mes a partir de la secuencia AMPLIADA (±1 dia, ver
+    fichajes_mes_ampliado): empareja sobre toda la secuencia —los turnos
+    nocturnos de fin de mes cierran bien e imputan sus horas al dia de la
+    ENTRADA— y devuelve solo los dias que caen dentro del mes pedido. PURO."""
+    pref = f"{year:04d}-{month:02d}-"
+    return [d for d in resumen_por_dia(fichajes) if d.fecha.startswith(pref)]
 
 
 def _horas_entre(ts0: str, ts1: str) -> float:

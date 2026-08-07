@@ -10,7 +10,7 @@ import csv
 import html
 from pathlib import Path
 
-from .store import DiaResumen, Fichaje, resumen_por_dia
+from .store import DiaResumen, Fichaje, resumen_mes
 
 PW, PH, M = 595, 842, 42
 TW = PW - 2 * M
@@ -89,9 +89,16 @@ def exportar_pdf(out_path: str, *, negocio: str, year: int, month: int,
             f'(cada uno lleva su huella y su numero de asientos): comparandolos se detecta '
             f'tambien un recorte al final del registro.</div>', 12)
 
-        # por empleado
+        # por empleado. Las listas llegan AMPLIADAS ±1 dia (fichajes_mes_ampliado)
+        # para que los turnos nocturnos de fin de mes emparejen; resumen_mes
+        # descarta los dias del margen. Un empleado que solo tenga movimientos
+        # en el margen (dias de otro mes) no aparece en el informe.
+        alguno = False
         for nombre in sorted(por_empleado, key=str.casefold):
-            dias = resumen_por_dia(por_empleado[nombre])
+            dias = resumen_mes(por_empleado[nombre], year, month)
+            if not dias:
+                continue
+            alguno = True
             total_h = sum(d.horas for d in dias)
             n_inc = sum(len(d.incidencias) for d in dias)
             put(f'<div style="font-family:sans-serif;font-size:14px;font-weight:bold;'
@@ -114,6 +121,8 @@ def exportar_pdf(out_path: str, *, negocio: str, year: int, month: int,
                 put('<table style="font-family:sans-serif;font-size:9px;border-collapse:collapse;'
                     'width:100%">' + "".join(filas[i:i + 10]) + "</table>", 2)
             y += 10
+        if not alguno:
+            raise ReportError("No hay fichajes en ese mes.")
 
         pie = ('<div style="font-family:sans-serif;font-size:8px;color:#94a3b8">'
                'Generado con FichajeLocal (gratis y open source) · simplificaconia.com · '

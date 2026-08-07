@@ -32,10 +32,28 @@ if (-not $iscc) {
     Write-Host "No se encontro Inno Setup (ISCC.exe). winget install JRSoftware.InnoSetup" -ForegroundColor Red
     exit 1
 }
-& $iscc "/DMyAppVersion=$ver" (Join-Path $PSScriptRoot "FichajeLocal.iss")
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "`nInstalador: $(Join-Path $root ("installer\FichajeLocal-Setup-$ver.exe"))" -ForegroundColor Green
+New-Item -ItemType Directory -Force -Path (Join-Path $root "installer") | Out-Null
+
+# Se compila a una carpeta TEMPORAL (via /O) porque el Windows Search Indexer
+# bloquea intermitentemente la carpeta de salida bajo el perfil e Inno falla con
+# "EndUpdateResource failed (110)". Luego se mueve a installer\.
+# (Mismo arreglo que CapturaPro, CapturaStudio y GuiaClick.)
+$tmpOut = Join-Path $env:TEMP "FichajeLocal_setup_build"
+New-Item -ItemType Directory -Force -Path $tmpOut | Out-Null
+& $iscc "/O$tmpOut" "/DMyAppVersion=$ver" (Join-Path $PSScriptRoot "FichajeLocal.iss")
+$code = $LASTEXITCODE
+
+if ($code -eq 0) {
+    $built = Get-ChildItem (Join-Path $tmpOut "FichajeLocal-Setup-*.exe") -ErrorAction SilentlyContinue |
+             Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if (-not $built) {
+        Write-Host "`nNo se encontro el instalador compilado en $tmpOut." -ForegroundColor Red
+        exit 1
+    }
+    $dest = Join-Path $root ("installer\" + $built.Name)
+    Move-Item -Force -Path $built.FullName -Destination $dest
+    Write-Host "`nInstalador: $dest  ($([math]::Round((Get-Item $dest).Length/1MB,1)) MB)" -ForegroundColor Green
 } else {
-    Write-Host "Fallo el instalador (codigo $LASTEXITCODE)." -ForegroundColor Red
-    exit $LASTEXITCODE
+    Write-Host "Fallo el instalador (codigo $code)." -ForegroundColor Red
+    exit $code
 }

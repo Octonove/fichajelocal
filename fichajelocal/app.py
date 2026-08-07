@@ -518,12 +518,14 @@ class AdminWindow(tk.Toplevel):
             return hoy.year, hoy.month
 
     def _refresh_mes(self) -> None:
-        from .store import resumen_por_dia
+        from .store import resumen_mes
         y, m = self._mes_anio()
         self.tree.delete(*self.tree.get_children())
         for eid, nombre, _a in self.store.empleados(solo_activos=False):
-            fich = self.store.fichajes_mes(y, m, eid)
-            for d in resumen_por_dia(fich):
+            # ventana ±1 dia: un turno nocturno de fin de mes necesita ambos
+            # movimientos para emparejar; resumen_mes filtra los dias del margen
+            fich = self.store.fichajes_mes_ampliado(y, m, eid)
+            for d in resumen_mes(fich, y, m):
                 detalle = " · ".join(d.movimientos)
                 if d.incidencias:
                     detalle += "   ⚠ " + "; ".join(d.incidencias)
@@ -606,7 +608,9 @@ class AdminWindow(tk.Toplevel):
         y, m = self._mes_anio()
         por_emp: dict[str, list] = {}
         for eid, nombre, _a in self.store.empleados(solo_activos=False):
-            fich = self.store.fichajes_mes(y, m, eid)
+            # ampliado ±1 dia: el PDF empareja los turnos nocturnos de fin de
+            # mes y resumen_mes (en report) descarta los dias del margen
+            fich = self.store.fichajes_mes_ampliado(y, m, eid)
             if fich:
                 por_emp[nombre] = fich
         if not por_emp:

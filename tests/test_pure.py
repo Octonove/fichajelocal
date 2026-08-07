@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from fichajelocal import report  # noqa: E402
 from fichajelocal.store import (GENESIS, Fichaje, Store, StoreError,  # noqa: E402
-                                hash_asiento, resumen_por_dia)
+                                hash_asiento, resumen_mes, resumen_por_dia)
 
 
 @pytest.fixture
@@ -62,12 +62,27 @@ def test_alternancia_automatica(store):
     assert (t1, t2, t3) == ("entrada", "salida", "entrada")
 
 
-def test_correccion_no_altera_alternancia(store):
+# La alternancia mira el ultimo movimiento EFECTIVO (correcciones incluidas,
+# por su ts_real): antes las correcciones no contaban y corregir una salida
+# olvidada dejaba el kiosco '● dentro' para siempre, invirtiendo todos los
+# fichajes siguientes.
+def test_correccion_reciente_resincroniza_alternancia(store):
     eid = store.add_empleado("Ana", "1234")
-    store.fichar(eid)                                    # entrada
-    store.add_correccion(eid, "2026-07-10 14:00", "salida", "olvido")
+    store.fichar(eid, tipo="entrada", ts="2026-07-12 08:00:00")  # olvida la salida
+    store.add_correccion(eid, "2026-07-12 15:00", "salida", "olvido")
+    assert store.ultimo_tipo(eid) == "salida"    # el kiosco vuelve a '○ fuera'
+    t, _ = store.fichar(eid)                     # primer toque del dia siguiente
+    assert t == "entrada"
+
+
+def test_correccion_antigua_no_altera_alternancia(store):
+    eid = store.add_empleado("Ana", "1234")
+    store.fichar(eid, tipo="entrada", ts="2026-07-12 08:00:00")
+    # correccion de un olvido ANTERIOR al ultimo movimiento real: no cambia nada
+    store.add_correccion(eid, "2026-07-10 14:00", "salida", "olvido antiguo")
+    assert store.ultimo_tipo(eid) == "entrada"
     t, _ = store.fichar(eid)
-    assert t == "salida"        # la correccion no cuenta como movimiento de alternancia
+    assert t == "salida"
 
 
 # ------------------------------------------------------------------- cadena
@@ -167,6 +182,36 @@ def test_fichajes_mes_correccion_va_al_mes_real(store):
     assert ago == []
     dias = resumen_por_dia(jul)
     assert dias[0].horas == 7.0
+
+
+def test_turno_nocturno_cruza_el_mes(store):
+    # entrada 31-jul 22:00 + salida 1-ago 06:00: troceado por mes cada informe
+    # veia medio turno (0 h + incidencia falsa en LOS DOS meses). Con la ventana
+    # ampliada ±1 dia el turno empareja: las 8 h van a julio (dia de la entrada).
+    eid = store.add_empleado("Ana", "1234")
+    store.fichar(eid, tipo="entrada", ts="2026-07-31 22:00:00")
+    store.fichar(eid, tipo="salida", ts="2026-08-01 06:00:00")
+    jul = resumen_mes(store.fichajes_mes_ampliado(2026, 7, eid), 2026, 7)
+    assert [d.fecha for d in jul] == ["2026-07-31"]
+    assert jul[0].horas == 8.0 and jul[0].incidencias == []
+    # agosto: la salida se muestra como movimiento real del dia 1 (igual que el
+    # cruce de medianoche intra-mes) pero SIN horas y SIN incidencia falsa
+    ago = resumen_mes(store.fichajes_mes_ampliado(2026, 8, eid), 2026, 8)
+    assert [d.fecha for d in ago] == ["2026-08-01"]
+    assert ago[0].movimientos == ["06:00 salida"]
+    assert ago[0].horas == 0.0 and ago[0].incidencias == []
+
+
+def test_turno_nocturno_cruza_el_anio(store):
+    # el margen ±1 dia tambien funciona en el cambio de anio (dic -> ene)
+    eid = store.add_empleado("Ana", "1234")
+    store.fichar(eid, tipo="entrada", ts="2026-12-31 22:00:00")
+    store.fichar(eid, tipo="salida", ts="2027-01-01 06:00:00")
+    dic = resumen_mes(store.fichajes_mes_ampliado(2026, 12, eid), 2026, 12)
+    assert [d.fecha for d in dic] == ["2026-12-31"]
+    assert dic[0].horas == 8.0 and dic[0].incidencias == []
+    ene = resumen_mes(store.fichajes_mes_ampliado(2027, 1, eid), 2027, 1)
+    assert [(d.fecha, d.horas, d.incidencias) for d in ene] == [("2027-01-01", 0.0, [])]
 
 
 # ------------------------------------------------------------------ backup
