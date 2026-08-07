@@ -369,6 +369,27 @@ def _mov_efectivos(fichajes: list[Fichaje]) -> list[tuple[str, str, bool]]:
     return movs
 
 
+def _anomalias_reloj(fichajes: list[Fichaje]) -> list[tuple[str, str]]:
+    """Detecta retrocesos del reloj del sistema: un movimiento REAL grabado
+    (orden de insercion) con ts anterior al movimiento real previo. PURO.
+
+    Sin esto, un retroceso (NTP, cambio manual) descolocaba el emparejamiento y
+    las horas del dia salian mal SIN rastro; en un registro legal la anomalia
+    debe quedar escrita. Las correcciones no cuentan: retro-fechar una
+    correccion es legitimo."""
+    out: list[tuple[str, str]] = []
+    prev: str | None = None
+    for f in fichajes:                      # orden de insercion (id)
+        if f.tipo == "correccion":
+            continue
+        if prev is not None and f.ts < prev:
+            out.append((f.ts[:10],
+                        f"reloj del sistema retrocedido ({f.ts[11:16]} grabado tras "
+                        f"{prev[11:16]}): revisar las horas de este dia"))
+        prev = f.ts
+    return out
+
+
 def resumen_por_dia(fichajes: list[Fichaje]) -> list[DiaResumen]:
     """Agrupa los fichajes de UN empleado por dia y calcula horas. PURO.
 
@@ -401,6 +422,9 @@ def resumen_por_dia(fichajes: list[Fichaje]) -> list[DiaResumen]:
                 entrada_ts = None
     if entrada_ts is not None:
         dia(entrada_ts[:10]).incidencias.append("entrada sin salida (jornada sin cerrar)")
+
+    for fecha, msg in _anomalias_reloj(fichajes):
+        dia(fecha).incidencias.append(msg)
 
     for d in dias.values():
         d.horas = round(d.horas, 2)

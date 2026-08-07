@@ -264,3 +264,34 @@ def test_csv_incluye_y_neutraliza_formulas(tmp_path, store):
     contenido = Path(out).read_text(encoding="utf-8-sig")
     assert "fecha;hora;empleado;tipo" in contenido.splitlines()[0]
     assert "2026-07-01;08:00:00;'=1+1;entrada" in contenido   # prefijado con apostrofo
+
+
+def test_retroceso_de_reloj_genera_incidencia():
+    """Un movimiento real grabado con ts anterior al previo (reloj retrocedido)
+    debe dejar incidencia visible; el par normal no genera ninguna."""
+    from fichajelocal.store import Fichaje, resumen_por_dia
+
+    def fich(id_, tipo, ts):
+        return Fichaje(id_, 1, "Ana", tipo, ts, "", "", "", "")
+
+    # normal: entrada 08:00, salida 16:00 -> sin incidencias
+    normal = [fich(1, "entrada", "2026-08-03 08:00:00"),
+              fich(2, "salida", "2026-08-03 16:00:00")]
+    dias = resumen_por_dia(normal)
+    assert dias[0].horas == 8.0 and dias[0].incidencias == []
+
+    # reloj retrocedido: la salida se graba (id posterior) con ts anterior
+    raro = [fich(1, "entrada", "2026-08-03 10:00:00"),
+            fich(2, "salida", "2026-08-03 09:30:00")]
+    dias = resumen_por_dia(raro)
+    inc = " | ".join(i for d in dias for i in d.incidencias)
+    assert "reloj del sistema retrocedido" in inc
+    assert "09:30" in inc and "10:00" in inc
+
+    # una correccion retro-fechada NO es anomalia
+    corr = [fich(1, "entrada", "2026-08-03 08:00:00"),
+            fich(2, "salida", "2026-08-03 16:00:00"),
+            Fichaje(3, 1, "Ana", "correccion", "2026-08-04 09:00:00", "", "",
+                    "2026-08-02 15:00:00", "salida")]
+    dias = resumen_por_dia(corr)
+    assert not any("retrocedido" in i for d in dias for i in d.incidencias)
