@@ -11,4 +11,4 @@ empleado, sin cuentas: los datos de jornada de tu equipo no salen del negocio.
 from __future__ import annotations
 
 APP_NAME = "FichajeLocal"
-APP_VERSION = "1.0.0"   # fuente unica de version: build-installer.ps1 la inyecta al .iss
+APP_VERSION = "1.0.1"   # fuente unica de version: build-installer.ps1 la inyecta al .iss
