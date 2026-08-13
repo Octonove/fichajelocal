@@ -1,55 +1,54 @@
 # FichajeLocal
 
-**Registro horario para pymes, 100% en tu PC**: un kiosco de fichaje en el ordenador del mostrador. Cada empleado toca su nombre, marca su PIN, y la app registra entrada o salida automáticamente. El informe mensual sale **listo para tu gestoría** (PDF y CSV) — sin nube, sin cuotas por empleado, sin cuentas.
+[![license](https://img.shields.io/github/license/Octonove/fichajelocal)](LICENSE)
+[![release](https://img.shields.io/github/v/release/Octonove/fichajelocal)](https://github.com/Octonove/fichajelocal/releases/latest)
+[![platform](https://img.shields.io/badge/platform-Windows%2010%2F11-1E3A5F)](https://github.com/Octonove/fichajelocal/releases/latest)
 
-> En España el registro de jornada es **obligatorio desde 2019** para toda empresa con empleados (art. 34.9 ET), se conserva 4 años y las multas van de 751 € a 7.500 € por centro. FichajeLocal lo resuelve gratis y sin que los datos de jornada de tu equipo salgan del negocio.
+A local time-clock kiosk for small business: PIN check-in, tamper-evident records, accountant-ready reports.
 
-## 🔗 La diferencia: cadena de integridad
+**Free · Open source (MIT) · 100% local — nothing ever leaves your PC · No accounts, no limits, no watermarks**
 
-Cada fichaje queda **encadenado criptográficamente** (SHA-256) al anterior, firmando también **quién** ficha: editar, borrar o reordenar un asiento intermedio rompe la cadena y el informe lo delata — al contrario que un Excel, que cualquiera puede retocar. Las correcciones de olvidos se añaden como asientos nuevos también encadenados: el rastro completo queda siempre a la vista.
+<img src="docs/screenshot.png" width="720" alt="FichajeLocal screenshot">
 
-**Alcance honesto** (importante): la cadena garantiza que nadie ha alterado un asiento suelto ni el orden. Por sí sola, en un equipo cuyo dueño es la propia empresa, **no puede impedir que alguien con acceso al fichero reescriba todo el historial** desde cero. La defensa práctica es sencilla y ya viene incorporada: **cada informe y cada copia mensual llevan su "huella" y su número de asientos**; si los conservas en tu **gestoría** (un tercero de confianza), una reescritura o un recorte posteriores dejan de cuadrar con lo ya entregado y se detectan. Guarda los PDF/copias cada mes.
+> 🇪🇸 ¿Prefieres leerlo en español? → **[README en español](README.es.md)**
 
-> Despliegue: usa FichajeLocal **siempre en la misma cuenta de Windows** del PC del mostrador. Los datos se guardan en `%APPDATA%\FichajeLocal\fichajes.db` (por usuario de Windows); si fichas desde otra cuenta, el registro se guardaría por separado. Configura la **copia de seguridad automática** a un USB o carpeta de red desde Administración → Ajustes.
+## Features
 
-## ⬇️ Descargar (Windows 10/11)
+- Kiosk mode: each employee taps their name and PIN to clock in/out
+- Every record is **SHA-256 chained** — tampering becomes evident
+- Corrections with audit trail, plus **system-clock anomaly detection**
+- Monthly **PDF/CSV reports** ready for your accountant; automatic backups
+- Complies with Spain's mandatory working-time registry (art. 34.9 ET) — no cloud, no per-employee fees
 
-### ➡️ [**Descargar FichajeLocal (instalador .exe)**](https://github.com/Octonove/fichajelocal/releases/latest/download/FichajeLocal-Setup.exe)
+## Download (Windows 10/11)
 
-Descarga **directa** del instalador, sin registro. También puedes ver la [última versión y notas](https://github.com/Octonove/fichajelocal/releases/latest).
+### ➡️ [**Download FichajeLocal (installer .exe)**](https://github.com/Octonove/fichajelocal/releases/latest/download/FichajeLocal-Setup.exe)
 
-> Si Windows muestra *"Windows protegió tu PC"* (es normal en programas nuevos sin firma): pulsa **Más información → Ejecutar de todas formas**. Se instala sin permisos de administrador.
+Direct download, no sign-up. If Windows shows *"Windows protected your PC"* (normal for new unsigned apps): click **More info → Run anyway**. Installs without administrator rights.
 
-## Funciones
+> ⭐ **If FichajeLocal is useful to you, a star on GitHub is the best way to support it — it costs nothing and helps a lot.**
 
-- **Kiosco táctil**: reloj grande, botones por empleado con su estado (dentro/fuera), teclado PIN en pantalla. Opción de pantalla completa.
-- **Entrada/salida automática**: la app sabe si estás dentro o fuera; solo marcas tu PIN.
-- **PINs seguros**: jamás se guardan en claro (PBKDF2-SHA256 con salt por empleado). PIN de administración aparte.
-- **Administración**: alta/baja de empleados, corrección de olvidos (como asiento encadenado, nunca edición), verificación de integridad con un clic.
-- **Informe mensual PDF** con horas por día y empleado, incidencias (jornadas sin cerrar, salidas sin entrada) y el **sello de integridad** de la cadena; **CSV** con separador `;` listo para Excel/gestoría.
-- **Copia de seguridad automática** al cerrar (a USB o carpeta de red), con sello de integridad.
+## More free local-first tools
 
-## Stack
+Every tool in this family follows the same rules: free, open source, and nothing leaves your PC.
 
-Python 3 + Tkinter (ttk) · SQLite (stdlib) + cadena SHA-256 · PyMuPDF (informes PDF).
+| Tool | What it does |
+|---|---|
+| [CapturaPro](https://github.com/Octonove/capturapro) | Screenshots, GIFs and screen recordings for Windows — annotated, watermark-free, 100% local. |
+| [TranscriptorIA](https://github.com/Octonove/transcriptor-ia) | Audio & video to text and .srt subtitles with local Whisper AI — free, private, unlimited. |
+| [PDFLocal](https://github.com/Octonove/pdflocal) | The full PDF toolbox for Windows: merge, split, compress, sign, OCR and chat with your documents — no uploads. |
+| [CajaPDF](https://github.com/Octonove/cajapdf) | The tiny PDF utility: merge, split and compress — free, offline, no accounts. |
+| [CapturaStudio](https://github.com/Octonove/capturastudio) | An OBS-style recording & streaming studio with local AI superpowers — record, stream, auto-edit. |
+| [GuiaClick](https://github.com/Octonove/guiaclick) | Record your clicks, get a step-by-step guide — annotated screenshots, blur, PDF/HTML export. Like Scribe, but local. |
+| [ActaLocal](https://github.com/Octonove/actalocal) | Meetings → minutes: local Whisper transcription plus AI summary, decisions and action items. |
+| [AutoEscritorio](https://github.com/Octonove/autoescritorio) | Trigger→action automation for Windows: watch folders, hotkeys, USB, clipboard — simple and local. |
+| [BalanceLocal](https://github.com/Octonove/balancelocal) | Your work Wrapped: where your time actually goes, as shareable cards, a PDF report and a mini-video. |
+| [CajaNegra](https://github.com/Octonove/cajanegra) | A dashcam for your PC: the last minutes of your screen, one hotkey away from a perfect incident report. |
+| [ITVLocal](https://github.com/Octonove/itvlocal) | An MOT-style inspection for your PC: 1–3 minutes, a 0–10 score and a PDF certificate. Inspects, never modifies. |
+| [SonarArchivo](https://github.com/Octonove/sonararchivo) | Find files by what's INSIDE them: local full-text search over your messy folders and old drives. |
 
-Depende del paquete compartido de la suite [`octonove-core`](https://github.com/Octonove/octonove-core) (tema, config): debe estar en el `sys.path` del entorno (vía `.pth` o copia junto al proyecto).
+Also: **[CRBRO](https://github.com/Octonove/crbro-memory)** — persistent neural memory for AI agents (MCP server).
 
-## Compilar
+## License
 
-```powershell
-.\build\build.ps1              # ejecutable (PyInstaller onedir)
-.\build\build-installer.ps1    # instalador (Inno Setup)
-```
-
-## Tests
-
-```powershell
-python -m pytest tests/ -q
-```
-
-## Licencia
-
-[MIT](LICENSE) — © 2026 Octonove.
-
-*FichajeLocal es una herramienta de registro: no constituye asesoramiento laboral ni jurídico.*
+[MIT](LICENSE) — see also [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) where present.
