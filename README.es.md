@@ -4,6 +4,11 @@
 
 > En España el registro de jornada es **obligatorio desde 2019** para toda empresa con empleados (art. 34.9 ET), se conserva 4 años y las multas van de 751 € a 7.500 € por centro. FichajeLocal lo resuelve gratis y sin que los datos de jornada de tu equipo salgan del negocio.
 
+<!-- invokard-coffee -->
+**&#9749; Si esto te ahorra tiempo, inv&iacute;tame a un caf&eacute;.** [![Inv&iacute;tame a un caf&eacute; con PayPal](https://img.shields.io/badge/PayPal-Inv%C3%ADtame%20a%20un%20caf%C3%A9-00457C?logo=paypal&logoColor=white)](https://www.paypal.com/donate/?business=stradoxx%40gmail.com&no_recurring=0&currency_code=EUR&item_name=Support%20fichajelocal)
+
+**USDC** &middot; Solana `5n6Gfosk7SdwbvdtE9xiLWpcGPBBBGDZYRfAkWyCk86g` &middot; Ethereum (ERC-20) `0xe176866f9d7fdb498e0d4a983d3e34d84dcd6bfc`
+
 ## 🔗 La diferencia: cadena de integridad
 
 Cada fichaje queda **encadenado criptográficamente** (SHA-256) al anterior, firmando también **quién** ficha: editar, borrar o reordenar un asiento intermedio rompe la cadena y el informe lo delata — al contrario que un Excel, que cualquiera puede retocar. Las correcciones de olvidos se añaden como asientos nuevos también encadenados: el rastro completo queda siempre a la vista.
